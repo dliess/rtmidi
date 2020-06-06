@@ -39,6 +39,7 @@
 
 #include "RtMidi.h"
 #include <sstream>
+#include <fstream>
 
 #if defined(__MACOSX_CORE__)
   #if TARGET_OS_IPHONE
@@ -1845,15 +1846,33 @@ std::string MidiInAlsa :: getPortName( unsigned int portNumber )
   if ( portInfo( data->seq, pinfo, SND_SEQ_PORT_CAP_READ|SND_SEQ_PORT_CAP_SUBS_READ, (int) portNumber ) ) {
     int cnum = snd_seq_port_info_get_client( pinfo );
     snd_seq_get_any_client_info( data->seq, cnum, cinfo );
+
     std::ostringstream os;
     os << snd_seq_client_info_get_name( cinfo );
     os << ":";
     os << snd_seq_port_info_get_name( pinfo );
-    os << " ";                                    // These lines added to make sure devices are listed
-    os << snd_seq_port_info_get_client( pinfo );  // with full portnames added to ensure individual device names
-    os << ":";
-    os << snd_seq_port_info_get_port( pinfo );
+
+    int cardNr = snd_seq_client_info_get_card(cinfo);
+    std::stringstream ss;
+    ss << "/proc/asound/card" << cardNr << "/usbid";
+    std::ifstream procFile(std::string(ss.str()));
+    if(!procFile.fail())
+    {
+      std::string line;
+      std::getline(procFile, line); 
+      os << " ";
+      os << line;
+    }
+    else
+    {
+      os << " ";                                    // These lines added to make sure devices are listed
+      os << snd_seq_port_info_get_client( pinfo );  // with full portnames added to ensure individual device names
+      os << ":";
+      os << snd_seq_port_info_get_port( pinfo );
+    }
+
     stringName = os.str();
+
     return stringName;
   }
 
@@ -2168,10 +2187,26 @@ std::string MidiOutAlsa :: getPortName( unsigned int portNumber )
     os << snd_seq_client_info_get_name( cinfo );
     os << ":";
     os << snd_seq_port_info_get_name( pinfo );
-    os << " ";                                    // These lines added to make sure devices are listed
-    os << snd_seq_port_info_get_client( pinfo );  // with full portnames added to ensure individual device names
-    os << ":";
-    os << snd_seq_port_info_get_port( pinfo );
+
+    int cardNr = snd_seq_client_info_get_card(cinfo);
+    std::stringstream ss;
+    ss << "/proc/asound/card" << cardNr << "/usbid";
+    std::ifstream procFile(std::string(ss.str()));
+    if(!procFile.fail())
+    {
+      std::string line;
+      std::getline(procFile, line); 
+      os << " ";
+      os << line;
+    }
+    else
+    {
+      os << " ";                                    // These lines added to make sure devices are listed
+      os << snd_seq_port_info_get_client( pinfo );  // with full portnames added to ensure individual device names
+      os << ":";
+      os << snd_seq_port_info_get_port( pinfo );
+    }
+
     stringName = os.str();
     return stringName;
   }
